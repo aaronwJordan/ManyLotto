@@ -1,0 +1,6 @@
+c:\users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\bin\Debug\ManyLotto.exe.config
+c:\users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\bin\Debug\ManyLotto.exe
+c:\users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\bin\Debug\ManyLotto.pdb
+c:\users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\obj\Debug\ManyLotto.exe
+c:\users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\obj\Debug\ManyLotto.pdb
+c:\users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\obj\Debug\ManyLotto.csprojResolveAssemblyReference.cache

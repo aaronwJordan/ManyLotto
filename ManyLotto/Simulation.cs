@@ -77,13 +77,12 @@ namespace ManyLotto
         private long[] CreateAndShuffleUserNumbers()
         {
             var userNumbers = new long[MAX_PICK_NUMS];
-            var userPB = 0;
 
             // Have to do this because Enumerable.Range().ToArray() is int[] -- we need a long[]
-            var tempUserNumbers = new long[60];
-            for (int i = 1; i < tempUserNumbers.Length; i++)
+            var tempUserNumbers = new long[59];
+            for (int i = 0; i < tempUserNumbers.Length; i++)
             {
-                tempUserNumbers[i] = i;
+                tempUserNumbers[i] = i + 1;
             }
 
             for (int i = tempUserNumbers.Length; i > 0 ; i--)

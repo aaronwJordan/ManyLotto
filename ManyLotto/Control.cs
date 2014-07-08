@@ -16,7 +16,7 @@ namespace ManyLotto
             userChoice = Convert.ToInt64(Console.ReadLine());
 
             Simulation simulation = new Simulation();
-            simulation.startSimulation();
+            simulation.StartSimulation();
 
             Console.Write("Done..");
             Console.ReadLine();

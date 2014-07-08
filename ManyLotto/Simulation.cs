@@ -6,23 +6,23 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-
-// TODO: ALL USERNUMBERS ARE DUPLICATES
 
 namespace ManyLotto
 {
     class Simulation : Control
     {
-        private long[] userNumbers = new long[MAX_PICK_NUMS];
-        private int userPB = 0;
         private long[] computerNumbers = new long[MAX_PICK_NUMS];
         private int computerPB = 0;
 
-        public void startSimulation()
+        // Base
+        public void StartSimulation()
         {
             string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "log.txt");
             string filePathTimes = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "times.txt");
+            var numbersConcurrentBag = new ConcurrentBag<long[]>();
+            var stopWatch = new Stopwatch();
 
             // Create log.txt -- If it already exists empty it
             if (!File.Exists(filePath))
@@ -30,44 +30,20 @@ namespace ManyLotto
             else
                 File.Create(filePath).Close();
 
-            Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
 
             // Create winning numbers
             CreateAndShuffleWinningNumbers();
 
             // Create bag to fill with user numbers
-            var numbersConcurrentBag = new ConcurrentBag<long[]>();
-            Parallel.For(0, userChoice, i => numbersConcurrentBag.Add(CreateAndShuffleUserNumbers()));
+            FillBag(numbersConcurrentBag);
 
             // Write to log
-            using (StreamWriter streamWriter = new StreamWriter(filePath))
-            {
-                streamWriter.Write("Winning numbers: ");
-                foreach (var element in computerNumbers)
-                {
-                    streamWriter.Write("{0}, ", element);
-                }
-                streamWriter.Write(" - [{0}]\n", computerPB);
-
-                foreach (var element in numbersConcurrentBag)
-                {
-                    streamWriter.Write("[");
-                    foreach (var index in element)
-                    {
-                        streamWriter.Write("{0}, ", index);
-                    }
-                    streamWriter.WriteLine("] - [{0}]", userPB);
-                }
-            }
-
+            WriteToLog(numbersConcurrentBag, filePath);
             stopWatch.Stop();
-            using (StreamWriter fileWriter = new StreamWriter(filePathTimes, true))
-            {
-                fileWriter.WriteLine("{0} simulations processed in {1}", userChoice, stopWatch.Elapsed);
-            }
-            Console.WriteLine("Time elapsed: {0}", stopWatch.Elapsed);
 
+            // Display time elapsed
+            TimeElapsed(filePathTimes, stopWatch);
         }
 
         // Create and shuffle winning numbers
@@ -76,7 +52,7 @@ namespace ManyLotto
             // Create 59 numbers
             var tempComputerNumbers = Enumerable.Range(1, 59).ToArray();
 
-            // Shuffle them
+            // Shuffle them -- Fisher-Yates
             for (int i = tempComputerNumbers.Length; i > 0; i--)
             {
                 int j = RandomHelper.Instance.Next(i);
@@ -100,7 +76,9 @@ namespace ManyLotto
         // Create and shuffle user numbers
         private long[] CreateAndShuffleUserNumbers()
         {
-            //var tempUserNumbers = Enumerable.Range(1, 59).ToArray();
+            var userNumbers = new long[MAX_PICK_NUMS];
+            var userPB = 0;
+
             // Have to do this because Enumerable.Range().ToArray() is int[] -- we need a long[]
             var tempUserNumbers = new long[60];
             for (int i = 1; i < tempUserNumbers.Length; i++)
@@ -121,12 +99,60 @@ namespace ManyLotto
             {
                 userNumbers[i] = tempUserNumbers[i];
             }
-            userPB = RandomHelper.Instance.Next(1, 36);
+            userPowerBall();
 
             // Might remove this later, just seeing how this will look in log
             Array.Sort(userNumbers);
 
             return userNumbers;
+        }
+
+        // Generate new PowerBall
+        private int userPowerBall()
+        {
+            int userPB = RandomHelper.Instance.Next(1, 36);
+
+            return userPB;
+        }
+
+        // Write to log.txt
+        private void WriteToLog(ConcurrentBag<long[]> numbersConcurrentBag, string filePath)
+        {
+            using (var streamWriter = new StreamWriter(filePath))
+            {
+                streamWriter.Write("Winning numbers: ");
+                foreach (var element in computerNumbers)
+                {
+                    streamWriter.Write("{0}, ", element);
+                }
+                streamWriter.Write(" - [{0}]\n", computerPB);
+
+                foreach (var element in numbersConcurrentBag)
+                {
+                    streamWriter.Write("[");
+                    foreach (var index in element)
+                    {
+                        streamWriter.Write("{0}, ", index);
+                    }
+                    streamWriter.WriteLine("] - [{0}] - Thread: {1}", userPowerBall(), Thread.CurrentThread.ManagedThreadId);
+                }
+            }
+        }
+
+        // Display stopwath information
+        private void TimeElapsed(string filePathTimes, Stopwatch stopWatch)
+        {
+            using (var fileWriter = new StreamWriter(filePathTimes, true))
+            {
+                fileWriter.WriteLine("{0} simulations processed in {1}", userChoice, stopWatch.Elapsed);
+            }
+            Console.WriteLine("Time elapsed: {0}", stopWatch.Elapsed);
+        }
+
+        // Fill bag with generated numbers
+        private void FillBag(ConcurrentBag<long[]> numbersConcurrentBag)
+        {
+            Parallel.For(0, userChoice, i => numbersConcurrentBag.Add(CreateAndShuffleUserNumbers()));
         }
     }
 }

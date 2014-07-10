@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +11,7 @@ namespace ManyLotto
     class Simulation : Control
     {
         private long[] computerNumbers = new long[MAX_PICK_NUMS];
-        private int computerPB = 0;
+        private int computerPowerBall;
 
         // Base
         public void StartSimulation()
@@ -22,6 +19,7 @@ namespace ManyLotto
             string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "log.txt");
             string filePathTimes = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "times.txt");
             var numbersConcurrentBag = new ConcurrentBag<long[]>();
+            var powerBallConcurrentBag = new ConcurrentBag<long>();
             var stopWatch = new Stopwatch();
 
             // Create log.txt -- If it already exists empty it
@@ -36,10 +34,13 @@ namespace ManyLotto
             CreateAndShuffleWinningNumbers();
 
             // Create bag to fill with user numbers
-            FillBag(numbersConcurrentBag);
+            FillBagNumbers(numbersConcurrentBag);
+
+            // Create bag to fill with PowerBall numbers
+            FillBagPowerBall(powerBallConcurrentBag);
 
             // Write to log
-            WriteToLog(numbersConcurrentBag, filePath);
+            WriteToLog(numbersConcurrentBag, powerBallConcurrentBag, filePath);
             stopWatch.Stop();
 
             // Display time elapsed
@@ -67,10 +68,72 @@ namespace ManyLotto
                 computerNumbers[i] = tempComputerNumbers[i];
             }
             // PowerBall number
-            computerPB = RandomHelper.Instance.Next(1, 36);
+            computerPowerBall = RandomHelper.Instance.Next(1, 36);
 
             // Faster comparison (sorted | unsorted) vs (unsorted | unsorted)
             Array.Sort(tempComputerNumbers);
+        }
+
+        // Fill bag with generated numbers
+        private void FillBagNumbers(ConcurrentBag<long[]> numbersConcurrentBag)
+        {
+            Parallel.For(0, userChoice, i => numbersConcurrentBag.Add(CreateAndShuffleUserNumbers()));
+        }
+
+        private void FillBagPowerBall(ConcurrentBag<long> powerBallConcurrentBag)
+        {
+            Parallel.For(0, userChoice, i => powerBallConcurrentBag.Add(userPowerBall()));
+        }
+
+        // Compare winning numbers to user numbers
+        private int NumberCompare(long[][] tempJaggedNumbersArray, long powerBallCounter)
+        {
+            var winHit = 0;
+
+            for (var i = 0; i < MAX_PICK_NUMS; i++)
+            {
+                for (var j = 0; j < MAX_PICK_NUMS; j++)
+                {
+                    if (tempJaggedNumbersArray[powerBallCounter][j] == computerNumbers[i])
+                        winHit++;
+                }
+            }
+            MatchHits(winHit);
+
+            return winHit;
+        }
+
+        // Match number of hits
+        private void MatchHits(int winHit)
+        {
+            long twoHit     = 0;
+            long threeHit   = 0;
+            long fourHit    = 0;
+            long fiveHit    = 0;
+   
+            switch (winHit)
+            {
+                case 0:
+                    break;
+                case 1:
+                    break;
+                case 2:
+                    twoHit++;
+                    break;
+                case 3:
+                    threeHit++;
+                    break;
+                case 4:
+                    fourHit++;
+                    break;
+                case 5:
+                    fiveHit++;
+                    Console.WriteLine("FIVE HIT");
+                    break;
+                default:
+                    Console.WriteLine("Default at MatchHits()");
+                    break;
+            }
         }
 
         // Create and shuffle user numbers
@@ -98,25 +161,19 @@ namespace ManyLotto
             {
                 userNumbers[i] = tempUserNumbers[i];
             }
-            userPowerBall();
 
-            // Might remove this later, just seeing how this will look in log
+            // Sort array numbers
             Array.Sort(userNumbers);
 
             return userNumbers;
         }
 
-        // Generate new PowerBall
-        private int userPowerBall()
-        {
-            int userPB = RandomHelper.Instance.Next(1, 36);
-
-            return userPB;
-        }
-
         // Write to log.txt
-        private void WriteToLog(ConcurrentBag<long[]> numbersConcurrentBag, string filePath)
+        private void WriteToLog(ConcurrentBag<long[]> numbersConcurrentBag, ConcurrentBag<long> powerBallConcurrentBag, string filePath)
         {
+            long powerBallCounter = 0;
+            var tempPowerBallArray = powerBallConcurrentBag.ToArray();
+            var tempJaggedNumbersArray = numbersConcurrentBag.ToArray();
             using (var streamWriter = new StreamWriter(filePath))
             {
                 streamWriter.Write("Winning numbers: ");
@@ -124,18 +181,40 @@ namespace ManyLotto
                 {
                     streamWriter.Write("{0}, ", element);
                 }
-                streamWriter.Write(" - [{0}]\n", computerPB);
+                streamWriter.Write("- [{0}]", computerPowerBall);
 
                 foreach (var element in numbersConcurrentBag)
                 {
+                    var tempThreadPrintCounter = 0;
+                    streamWriter.Write("\nPlay: {0} - {1} hit(s) - {2} PowerBall - ", powerBallCounter + 1, NumberCompare(tempJaggedNumbersArray, powerBallCounter), ComparePowerBall(powerBallCounter, tempPowerBallArray));
                     streamWriter.Write("[");
                     foreach (var index in element)
                     {
-                        streamWriter.Write("{0}, ", index);
+                        streamWriter.Write
+                            (tempThreadPrintCounter < 4 ? "{0}, " : "{0}", index);
+
+                        if (tempThreadPrintCounter == (MAX_PICK_NUMS - 1))
+                            streamWriter.Write("] - [{0}] - Thread: {1}", tempPowerBallArray[powerBallCounter], Thread.CurrentThread.ManagedThreadId);
+                        tempThreadPrintCounter++;
                     }
-                    streamWriter.WriteLine("] - [{0}] - Thread: {1}", userPowerBall(), Thread.CurrentThread.ManagedThreadId);
+                    powerBallCounter++;
                 }
             }
+        }
+
+        private bool ComparePowerBall(long powerBallCounter, long[] tempPowerBallArray)
+        {
+            if (computerPowerBall == tempPowerBallArray[powerBallCounter])
+                return true;
+            return false;
+        }
+
+        // Generate new PowerBall
+        private int userPowerBall()
+        {
+            int userPowerBall = RandomHelper.Instance.Next(1, 36);
+
+            return userPowerBall;
         }
 
         // Display stopwath information
@@ -146,12 +225,6 @@ namespace ManyLotto
                 fileWriter.WriteLine("{0} simulations processed in {1}", userChoice, stopWatch.Elapsed);
             }
             Console.WriteLine("Time elapsed: {0}", stopWatch.Elapsed);
-        }
-
-        // Fill bag with generated numbers
-        private void FillBag(ConcurrentBag<long[]> numbersConcurrentBag)
-        {
-            Parallel.For(0, userChoice, i => numbersConcurrentBag.Add(CreateAndShuffleUserNumbers()));
-        }
+        }        
     }
 }

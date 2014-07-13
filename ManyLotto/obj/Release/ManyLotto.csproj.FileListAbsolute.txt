@@ -1,0 +1,5 @@
+C:\Users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\bin\Release\ManyLotto.exe.config
+C:\Users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\bin\Release\ManyLotto.exe
+C:\Users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\bin\Release\ManyLotto.pdb
+C:\Users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\obj\Release\ManyLotto.exe
+C:\Users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\obj\Release\ManyLotto.pdb

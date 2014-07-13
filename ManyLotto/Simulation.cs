@@ -12,7 +12,7 @@ namespace ManyLotto
     {
         private long[] computerNumbers = new long[MAX_PICK_NUMS];
         private int computerPowerBall;
-
+        
         // Base
         public void StartSimulation()
         {
@@ -98,27 +98,20 @@ namespace ManyLotto
                         winHit++;
                 }
             }
-            MatchHits(winHit);
 
             return winHit;
         }
 
         // Match number of hits
-        private void MatchHits(int winHit)
+        private void MatchHits(int tempNumberCompare, ref long threeHit, ref long fourHit, ref long fiveHit)
         {
-            long twoHit     = 0;
-            long threeHit   = 0;
-            long fourHit    = 0;
-            long fiveHit    = 0;
-   
-            switch (winHit)
+            switch (tempNumberCompare)
             {
                 case 0:
                     break;
                 case 1:
                     break;
                 case 2:
-                    twoHit++;
                     break;
                 case 3:
                     threeHit++;
@@ -129,10 +122,24 @@ namespace ManyLotto
                 case 5:
                     fiveHit++;
                     Console.WriteLine("FIVE HIT");
+                    LogFiveHit(); // Remove here?
                     break;
                 default:
                     Console.WriteLine("Default at MatchHits()");
                     break;
+            }
+        }
+
+        // Print special five hit to fivehitlog.txt
+        private void LogFiveHit()
+        {
+            string filePathFiveHit = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "FiveHit.txt");
+
+            using (var fileWriter = new StreamWriter(filePathFiveHit, true))
+            {
+                //fileWriter.WriteLine("{0}");
+
+                // TODO: Maybe put under MatchHits call inside WritetoLog()
             }
         }
 
@@ -171,9 +178,12 @@ namespace ManyLotto
         // Write to log.txt
         private void WriteToLog(ConcurrentBag<long[]> numbersConcurrentBag, ConcurrentBag<long> powerBallConcurrentBag, string filePath)
         {
+            int tempNumberCompare;
+            long threeHit = 0, fourHit = 0, fiveHit = 0;
             long powerBallCounter = 0;
             var tempPowerBallArray = powerBallConcurrentBag.ToArray();
             var tempJaggedNumbersArray = numbersConcurrentBag.ToArray();
+
             using (var streamWriter = new StreamWriter(filePath))
             {
                 streamWriter.Write("Winning numbers: ");
@@ -185,13 +195,18 @@ namespace ManyLotto
 
                 foreach (var element in numbersConcurrentBag)
                 {
+                    tempNumberCompare = NumberCompare(tempJaggedNumbersArray, powerBallCounter);
                     var tempThreadPrintCounter = 0;
-                    streamWriter.Write("\nPlay: {0} - {1} hit(s) - {2} PowerBall - ", powerBallCounter + 1, NumberCompare(tempJaggedNumbersArray, powerBallCounter), ComparePowerBall(powerBallCounter, tempPowerBallArray));
+                    streamWriter.Write("\nPlay: {0} - {1} hit(s) - {2} PowerBall - ", powerBallCounter + 1, tempNumberCompare, ComparePowerBall(powerBallCounter, tempPowerBallArray));
                     streamWriter.Write("[");
+
+                    // Accumulate hits
+                    MatchHits(tempNumberCompare, ref threeHit, ref fourHit, ref fiveHit);
+                    // Log five hit?
+
                     foreach (var index in element)
                     {
-                        streamWriter.Write
-                            (tempThreadPrintCounter < 4 ? "{0}, " : "{0}", index);
+                        streamWriter.Write(tempThreadPrintCounter < 4 ? "{0}, " : "{0}", index);
 
                         if (tempThreadPrintCounter == (MAX_PICK_NUMS - 1))
                             streamWriter.Write("] - [{0}] - Thread: {1}", tempPowerBallArray[powerBallCounter], Thread.CurrentThread.ManagedThreadId);
@@ -200,8 +215,10 @@ namespace ManyLotto
                     powerBallCounter++;
                 }
             }
+            Console.WriteLine("\nHits: ({0}) - 3 hits | ({1}) - 4 hits | ({2}) - 5 hits\n", threeHit, fourHit, fiveHit);
         }
 
+        // Compare winning PowerBall to user generated ones
         private bool ComparePowerBall(long powerBallCounter, long[] tempPowerBallArray)
         {
             if (computerPowerBall == tempPowerBallArray[powerBallCounter])

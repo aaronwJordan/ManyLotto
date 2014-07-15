@@ -3,3 +3,4 @@ C:\Users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\bin\D
 C:\Users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\bin\Debug\ManyLotto.pdb
 C:\Users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\obj\Debug\ManyLotto.exe
 C:\Users\ajordan\documents\visual studio 2012\Projects\ManyLotto\ManyLotto\obj\Debug\ManyLotto.pdb
+C:\Users\ajordan\Documents\Visual Studio 2012\Projects\ManyLotto\ManyLotto\obj\Debug\ManyLotto.csprojResolveAssemblyReference.cache

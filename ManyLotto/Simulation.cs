@@ -16,17 +16,18 @@ namespace ManyLotto
         // Base
         public void StartSimulation()
         {
-            string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "log.txt");
-            string filePathTimes = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "times.txt");
+            var filePathLog = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "log.txt");
+            var filePathTimes = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "times.txt");
+            var filePathFiveHit = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "fivehit.txt");
             var numbersConcurrentBag = new ConcurrentBag<long[]>();
             var powerBallConcurrentBag = new ConcurrentBag<long>();
             var stopWatch = new Stopwatch();
 
             // Create log.txt -- If it already exists empty it
-            if (!File.Exists(filePath))
-                File.CreateText(filePath);
+            if (!File.Exists(filePathLog))
+                File.CreateText(filePathLog);
             else
-                File.Create(filePath).Close();
+                File.Create(filePathLog).Close();
 
             stopWatch.Start();
 
@@ -40,7 +41,7 @@ namespace ManyLotto
             FillBagPowerBall(powerBallConcurrentBag);
 
             // Write to log
-            WriteToLog(numbersConcurrentBag, powerBallConcurrentBag, filePath);
+            WriteToLog(numbersConcurrentBag, powerBallConcurrentBag, filePathLog, filePathFiveHit);
             stopWatch.Stop();
 
             // Display time elapsed
@@ -122,7 +123,6 @@ namespace ManyLotto
                 case 5:
                     fiveHit++;
                     Console.WriteLine("FIVE HIT");
-                    LogFiveHit(); // Remove here?
                     break;
                 default:
                     Console.WriteLine("Default at MatchHits()");
@@ -131,16 +131,9 @@ namespace ManyLotto
         }
 
         // Print special five hit to fivehitlog.txt
-        private void LogFiveHit()
+        private void LogFiveHit(StreamWriter streamWriterFiveHit, long powerBallCounter)
         {
-            string filePathFiveHit = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "FiveHit.txt");
-
-            using (var fileWriter = new StreamWriter(filePathFiveHit, true))
-            {
-                //fileWriter.WriteLine("{0}");
-
-                // TODO: Maybe put under MatchHits call inside WritetoLog()
-            }
+            streamWriterFiveHit.WriteLine(powerBallCounter);
         }
 
         // Create and shuffle user numbers
@@ -176,15 +169,13 @@ namespace ManyLotto
         }
 
         // Write to log.txt
-        private void WriteToLog(ConcurrentBag<long[]> numbersConcurrentBag, ConcurrentBag<long> powerBallConcurrentBag, string filePath)
+        private void WriteToLog(ConcurrentBag<long[]> numbersConcurrentBag, ConcurrentBag<long> powerBallConcurrentBag, string filePathLog, string filePathFiveHit)
         {
-            int tempNumberCompare;
-            long threeHit = 0, fourHit = 0, fiveHit = 0;
-            long powerBallCounter = 0;
+            long threeHit = 0, fourHit = 0, fiveHit = 0, powerBallCounter = 0;
             var tempPowerBallArray = powerBallConcurrentBag.ToArray();
             var tempJaggedNumbersArray = numbersConcurrentBag.ToArray();
 
-            using (var streamWriter = new StreamWriter(filePath))
+            using (var streamWriter = new StreamWriter(filePathLog))
             {
                 streamWriter.Write("Winning numbers: ");
                 foreach (var element in computerNumbers)
@@ -193,26 +184,35 @@ namespace ManyLotto
                 }
                 streamWriter.Write("- [{0}]", computerPowerBall);
 
-                foreach (var element in numbersConcurrentBag)
+                using (var streamWriterFiveHit = new StreamWriter(filePathFiveHit))
                 {
-                    tempNumberCompare = NumberCompare(tempJaggedNumbersArray, powerBallCounter);
-                    var tempThreadPrintCounter = 0;
-                    streamWriter.Write("\nPlay: {0} - {1} hit(s) - {2} PowerBall - ", powerBallCounter + 1, tempNumberCompare, ComparePowerBall(powerBallCounter, tempPowerBallArray));
-                    streamWriter.Write("[");
-
-                    // Accumulate hits
-                    MatchHits(tempNumberCompare, ref threeHit, ref fourHit, ref fiveHit);
-                    // Log five hit?
-
-                    foreach (var index in element)
+                    foreach (var element in numbersConcurrentBag)
                     {
-                        streamWriter.Write(tempThreadPrintCounter < 4 ? "{0}, " : "{0}", index);
+                        var tempNumberCompare = NumberCompare(tempJaggedNumbersArray, powerBallCounter);
+                        var tempThreadPrintCounter = 0;
 
-                        if (tempThreadPrintCounter == (MAX_PICK_NUMS - 1))
-                            streamWriter.Write("] - [{0}] - Thread: {1}", tempPowerBallArray[powerBallCounter], Thread.CurrentThread.ManagedThreadId);
-                        tempThreadPrintCounter++;
+                        if (tempNumberCompare > 0)
+                        {
+                            streamWriter.Write("\nPlay: {0} - {1} hit(s) - {2} PowerBall - [", powerBallCounter + 1, tempNumberCompare, ComparePowerBall(powerBallCounter, tempPowerBallArray));
+
+                            // Accumulate hits
+                            MatchHits(tempNumberCompare, ref threeHit, ref fourHit, ref fiveHit);
+
+                            // Log each five hit
+                            LogFiveHit(streamWriterFiveHit, powerBallCounter);
+
+                            foreach (var index in element)
+                            {
+                                // Print out every number with a comma and space except the last element
+                                streamWriter.Write(tempThreadPrintCounter < 4 ? "{0}, " : "{0}", index);
+
+                                if (tempThreadPrintCounter == (MAX_PICK_NUMS - 1))
+                                    streamWriter.Write("] - [{0}] - Thread: {1}", tempPowerBallArray[powerBallCounter], Thread.CurrentThread.ManagedThreadId);
+                                tempThreadPrintCounter++;
+                            }
+                        }
+                        powerBallCounter++;
                     }
-                    powerBallCounter++;
                 }
             }
             Console.WriteLine("\nHits: ({0}) - 3 hits | ({1}) - 4 hits | ({2}) - 5 hits\n", threeHit, fourHit, fiveHit);

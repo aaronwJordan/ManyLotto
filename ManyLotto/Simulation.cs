@@ -15,16 +15,6 @@ namespace ManyLotto
 		private long[] computerNumbers = new long[MAX_PICK_NUMS];
 		private int computerPowerBall;
 
-		/*  
-		 *  So, FillBagNumbers() which uses a concurrent bag fully fills up before comparisons ever begin.
-		 *  Thus, A huge bag is created which takes a metric shit-ton of memory.
-		 *  
-		 *  The idea now is to somehow split up FillBagNumbers()
-		 *  
-		 *  Fill bag up (25% of 100)? -> Compare -> Empty -> Fill (25% -> 50% of 100) etc -> (100% of 100) -> Done
-		 *  
-		 */
-
 		// Base
 		public void StartSimulation()
 		{
@@ -112,6 +102,7 @@ namespace ManyLotto
 			//TODO: SPREAD OUT TO SEPARATE METHODS, THIS IS REDICULOUS. ALSO WRITETOLOG()
 			//TODO: EMPTY THE JAGGED ARRAY OUT IN WRITETOLOG()
 			//TODO: FIX LOGFIVEHIT()
+			//TODO: CHANGE BOOL LOGICS TO TRUE AND SWAP ALL CONDITIONALS
 
 			bool casea = false;
 			bool caseb = false;
@@ -309,7 +300,7 @@ namespace ManyLotto
 		}
 
 		// Match number of hits
-		private void MatchHits(int tempNumberCompare, ref long threeHit, ref long fourHit, ref long fiveHit)
+		private void MatchHits(int tempNumberCompare, ref long threeHit, ref long fourHit, ref long fiveHit, ref bool logFiveHit)
 		{
 			switch (tempNumberCompare)
 			{
@@ -327,6 +318,7 @@ namespace ManyLotto
 					break;
 				case 5:
 					fiveHit++;
+					logFiveHit = true;
 					Console.WriteLine("FIVE HIT");
 					break;
 				default:
@@ -336,9 +328,9 @@ namespace ManyLotto
 		}
 
 		// Print special five hit to fivehitlog.txt
-		private void LogFiveHit(StreamWriter streamWriterFiveHit, long powerBallCounter)
+		private void LogFiveHit(StreamWriter streamWriterFiveHit, long lineCount)
 		{
-			streamWriterFiveHit.WriteLine(powerBallCounter);
+			streamWriterFiveHit.WriteLine(lineCount);
 		}
 
 		// Create and shuffle user numbers
@@ -379,6 +371,7 @@ namespace ManyLotto
 			long threeHit = 0, fourHit = 0, fiveHit = 0, powerBallCounter = 0;
 			long[] tempPowerBallArray = new long[userChoice];
 			long lineCount = 0;
+			bool logFiveHit = false;
 
 			using (var streamWriter = new StreamWriter(filePathLog))
 			{
@@ -434,14 +427,15 @@ namespace ManyLotto
 								streamWriter.Write("\nPlay: {0} - {1} hit(s) - {2} PowerBall - [", lineCount + 1, tempNumberCompare, ComparePowerBall(powerBallCounter, tempPowerBallArray));
 
 								// Accumulate hits
-								MatchHits(tempNumberCompare, ref threeHit, ref fourHit, ref fiveHit);
+								MatchHits(tempNumberCompare, ref threeHit, ref fourHit, ref fiveHit, ref logFiveHit);
 
 								// Log each five hit
 								// TODO: IF (MATCHITS > 5) -- NOT DONE
-								if (fiveHit > 0)
+								if (logFiveHit)
 								{
-									LogFiveHit(streamWriterFiveHit, lineCount);
+									LogFiveHit(streamWriterFiveHit, (lineCount + 1));
 								}
+								logFiveHit = false;
 
 								foreach (long index in element)
 								{

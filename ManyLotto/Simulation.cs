@@ -24,7 +24,7 @@ namespace ManyLotto
 			var numbersConcurrentBag = new ConcurrentBag<long[]>();
 			var powerBallConcurrentBag = new ConcurrentBag<long>();
 			var stopWatch = new Stopwatch();
-			long temp25 = 0, temp50 = 0, temp75 = 0;
+			long temp25 = 0L, temp50 = 0L, temp75 = 0L;
 			const int numberOfChunks = 4;
 			var chunkCounter = 1;
 
@@ -368,9 +368,9 @@ namespace ManyLotto
 		// Write to log.txt
 		private void WriteToLog(ConcurrentBag<long[]> numbersConcurrentBag, ConcurrentBag<long> powerBallConcurrentBag, string filePathLog, string filePathFiveHit, ref int chunkCounter, long temp25, long temp50, long temp75)
 		{
-			long threeHit = 0, fourHit = 0, fiveHit = 0, powerBallCounter = 0;
+			long threeHit = 0L, fourHit = 0L, fiveHit = 0L, powerBallCounter = 0L;
 			long[] tempPowerBallArray = new long[userChoice];
-			long lineCount = 0;
+			long lineCount = 0L;
 			bool logFiveHit = false;
 
 			using (var streamWriter = new StreamWriter(filePathLog))
@@ -429,8 +429,6 @@ namespace ManyLotto
 								// Accumulate hits
 								MatchHits(tempNumberCompare, ref threeHit, ref fourHit, ref fiveHit, ref logFiveHit);
 
-								// Log each five hit
-								// TODO: IF (MATCHITS > 5) -- NOT DONE
 								if (logFiveHit)
 								{
 									LogFiveHit(streamWriterFiveHit, (lineCount + 1));

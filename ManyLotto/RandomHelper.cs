@@ -9,7 +9,7 @@ namespace ManyLotto
 {
     public static class RandomHelper
     {
-        private static int seedCounter = new Random().Next();
+		private static int seedCounter = new Random().Next();
 
         [ThreadStatic] private static Random rng;
 
